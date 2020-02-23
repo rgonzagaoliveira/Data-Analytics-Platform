@@ -10,21 +10,22 @@ output$rd_data_load <- renderUI({
     box(title = "Data Load", status = "primary", width = 300, collapsible = TRUE,
         
         fluidRow(
-          column(2,
+          column(3,
             radioButtons("dt_type", "File Extension", 
                          choices = c("csv" = "csv",
                                      "xlsx" = "xlsx"),
                          inline = TRUE)
-          ),
+          )
+        ),
+        conditionalPanel(
           
-          conditionalPanel(
-            condition = "input.dt_type == 'csv'",
-            
-            column(2,
-              materialSwitch(inputId = "dt_csv_header", label = "Header", status = "success")
-            ),
-            
-            column(6,
+          condition = "input.dt_type == 'csv'",
+          fluidRow(
+            hr(),
+            column(12,
+                   h4("File Upload Options")
+                   ),
+            column(4,
               radioButtons("dt_csv_separator", "Separator", 
                            choices = c("Comma" = ",",
                                        "Semicolon" = ";",
@@ -36,9 +37,9 @@ output$rd_data_load <- renderUI({
                 textInput( "dt_csv_separator_other", "Type Data Separator", value = "type here", width = "200px")
                 )
             ),
-            
-        
-            column(2,
+              
+
+            column(3, #offset = 1,
               radioButtons("dt_csv_decimal", "Decimal",
                           choices=c("Period" = ".", 
                                     "Comma" = ","), 
@@ -46,7 +47,25 @@ output$rd_data_load <- renderUI({
             ),
             
             column(3,
-              fileInput("dt_load_csv", "Choose CSV File", accept = c(".csv"), width = "80%")
+                   checkboxGroupInput("dt_checkbox", "Additional Options",
+                                      choices = list("Header" = "header",
+                                                     "String As Factor" = "factor"),
+                                      selected = "header")
+            ),
+            
+            column(2,
+                   numericInput("dt_csv_rows", "Max Number of Rows",
+                                value = 1000, min = 1, max = 10000, step = 500) 
+            )
+          ),
+            
+          fluidRow(
+            hr(),
+            column(12,
+                   h4("Load File")
+                   ),
+            column(3,
+              fileInput("dt_load_csv", "Choose CSV File", accept = c(".csv"), width = "100%")
             )
           )
       )
@@ -62,7 +81,9 @@ output$rd_data_load <- renderUI({
 
 # Funcions ----
 
-dt_load_csv <- function(datapath, hdr, separator, decimal, str_as_factor = FALSE, max_rows_read = -1) {
+
+
+dt_upload_csv <- function(datapath, hdr, separator, decimal, str_as_factor = FALSE, max_rows_read = -1) {
   
   # check the file extension
   if (tolower(tools::file_ext(datapath)) %in% c("csv")) {
@@ -103,12 +124,14 @@ observeEvent(input$dt_load_csv, {
   
   # variables
   data_path <- input$dt_load_csv$datapath
-  header <- input$dt_csv_header
-  sep <- input$dt_csv_separator
+  sep <- if (input$dt_csv_separator != "other") input$dt_csv_separator else input$dt_csv_separator_other 
   dec <- input$dt_csv_decimal
-  
+  header <- if ("header" %in% input$dt_checkbox) TRUE else FALSE
+  factor <- if ("factor" %in% input$dt_checkbox) TRUE else FALSE
+  max_rows <- input$dt_csv_rows
+
   # inporting file
-  data_csv <- dt_load_csv(data_path, header, sep, dec, str_as_factor = FALSE, max_rows_read = -1)
+  data_csv <- dt_upload_csv(data_path, header, sep, dec, str_as_factor = factor, max_rows_read = max_rows)
   
   output$dt_explore <- DT::renderDataTable({
     DT::datatable(
