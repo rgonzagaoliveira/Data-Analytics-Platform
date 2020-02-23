@@ -5,7 +5,7 @@ suppressPackageStartupMessages({
   library(shinydashboard)
   library(rhandsontable)
   library(shinyWidgets)
-  # library(DT)
+  library(DT)
   # library(readxl)
   # library(MASS)
   # library(plotly)

@@ -53,8 +53,8 @@ output$rd_data_load <- renderUI({
         # plotOutput("control_chart", width = "80%")),
     ),
     
-    box(title = "Data Summary", status = "primary", width = 800,  collapsible = TRUE
-        # DT::dataTableOutput("control_descr_table2")
+    box(title = "Data Summary", status = "primary", width = 800,  collapsible = TRUE,
+        DT::dataTableOutput("dt_explore")
     )
   )
 })
@@ -62,19 +62,21 @@ output$rd_data_load <- renderUI({
 
 # Funcions ----
 
-dt_load_csv <- function(input_data, hdr, separator, decimal, str_as_factor = FALSE, max_rows_read = "all") {
+dt_load_csv <- function(datapath, hdr, separator, decimal, str_as_factor = FALSE, max_rows_read = -1) {
   
   # check the file extension
-  if (tolower(tools::file_ext(input_data$datapath)) %in% c("csv")) {
+  if (tolower(tools::file_ext(datapath)) %in% c("csv")) {
+    
     # importing file
-    datapath <- paste0(path, "/")
-    df <- read.csv2(input_data$datapath, 
+    df <- read.csv2(datapath, 
                     header = hdr, 
                     sep = separator, 
                     dec = decimal, 
                     stringsAsFactors = str_as_factor,
                     nrows = max_rows_read,
                     fill = TRUE)
+    
+    return(df)
   
   } else {
     cat("File Extension doesn't match")
@@ -99,12 +101,24 @@ dt_load_excel <- function(datapath) {
 # __observer -> load data ----
 observeEvent(input$dt_load_csv, {
   
-  # importing file
-  datapath <- input$dt_load_csv$datapath
+  # variables
+  data_path <- input$dt_load_csv$datapath
+  header <- input$dt_csv_header
+  sep <- input$dt_csv_separator
+  dec <- input$dt_csv_decimal
   
-  csv <- read.table(datapath, header = FALSE, sep = ";", 
-                    col.names = paste0("v",seq_len(27)), fill = TRUE, stringsAsFactors = FALSE)
+  # inporting file
+  data_csv <- dt_load_csv(data_path, header, sep, dec, str_as_factor = FALSE, max_rows_read = -1)
   
+  output$dt_explore <- DT::renderDataTable({
+    DT::datatable(
+      data_csv,
+      filter = 'top',
+      options = list(lengthMenu = c(5, 10, 20, 50), pageLength = 15, scrollX = TRUE, searching = T),
+      escape = FALSE,
+      rownames = TRUE)
+  })
+    
 })
 
 
